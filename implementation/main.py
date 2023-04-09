@@ -24,5 +24,5 @@ def load_lidar_data(path, num):
     o3d.visualization.draw_geometries([geom])
 
 if __name__ == "__main__":
-    load_lidar_data('lidar_data/20011104_959.laz', 1)
-    load_lidar_data('lidar_data/20011104_950.laz', 2)
+    load_lidar_data('implementation/lidar_data/20011104_959.laz', 1)
+    load_lidar_data('implementation/lidar_data/20011104_950.laz', 2)
