@@ -1,6 +1,8 @@
 import laspy
 import open3d as o3d
 import numpy as np
+from osgeo import gdal
+import matplotlib.pyplot as plt
 
 def load_lidar_data(path, num):
     print("Dataset " + str(num))
@@ -23,6 +25,24 @@ def load_lidar_data(path, num):
     geom.points = o3d.utility.Vector3dVector(point_data)
     o3d.visualization.draw_geometries([geom])
 
+def create_dem(path, num):
+    raster_dataset = gdal.Open(path)
+
+    channel1 = raster_dataset.GetRasterBand(1)
+    channel2 = raster_dataset.GetRasterBand(2)
+    channel3 = raster_dataset.GetRasterBand(3)
+
+    c1 = channel1.ReadAsArray()
+    c2 = channel2.ReadAsArray()
+    c3 = channel3.ReadAsArray()
+
+    dem_img = np.dstack((c1, c2, c3))
+    plt.imshow(dem_img)
+    plt.savefig("dem_" + str(num) + ".png")
+    plt.show()
+
 if __name__ == "__main__":
     load_lidar_data('implementation/lidar_data/20011104_959.laz', 1)
     load_lidar_data('implementation/lidar_data/20011104_950.laz', 2)
+    create_dem('implementation/raster_1.tif', 1)
+    create_dem('implementation/raster_2.tif', 2)
