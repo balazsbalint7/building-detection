@@ -3,6 +3,7 @@ import open3d as o3d
 import numpy as np
 from osgeo import gdal
 import matplotlib.pyplot as plt
+from PIL import Image
 
 def load_lidar_data(path, num):
     print("Dataset " + str(num))
@@ -41,8 +42,15 @@ def create_dem(path, num):
     plt.savefig("dem_" + str(num) + ".png")
     plt.show()
 
+def postProcessDem(path):
+    pass
+
 if __name__ == "__main__":
-    load_lidar_data('implementation/lidar_data/20011104_959.laz', 1)
-    load_lidar_data('implementation/lidar_data/20011104_950.laz', 2)
-    create_dem('implementation/raster_1.tif', 1)
-    create_dem('implementation/raster_2.tif', 2)
+    #load_lidar_data('implementation/lidar_data/20011104_959.laz', 1)
+    #load_lidar_data('implementation/lidar_data/20011104_950.laz', 2)
+    create_dem('implementation/lidar_data/raster_1_with_trees.tif', 1)
+    create_dem('implementation/lidar_data/raster_2_with_trees.tif', 2)
+    # dataset = gdal.Open('implementation/lidar_data/raster_1.tif', gdal.GA_ReadOnly)
+    # for x in range(1, dataset.RasterCount + 1):
+    #     band = dataset.GetRasterBand(x).ReadAsArray()
+    #     array = band.ReadAsArray()

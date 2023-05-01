@@ -8,3 +8,6 @@ https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/laz/geoid18/102/index.html
 pip install laspy<br /> 
 pip install open3d<br /> 
 pip install numpy<br /> 
+
+To create dem, we have to use pdal (and conda as well):
+conda install -c conda-forge pdal  
