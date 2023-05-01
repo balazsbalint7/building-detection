@@ -4,6 +4,7 @@ import numpy as np
 from osgeo import gdal
 import matplotlib.pyplot as plt
 from PIL import Image
+import os, shutil
 
 def load_lidar_data(path, num):
     print("Dataset " + str(num))
@@ -42,15 +43,51 @@ def create_dem(path, num):
     plt.savefig("dem_" + str(num) + ".png")
     plt.show()
 
-def postProcessDem(path):
-    pass
+def postProcessDem(path, newFile):
+    if (os.path.exists(newFile)):
+        os.remove(newFile)
+
+    dataset = gdal.Open(path)
+    band = dataset.GetRasterBand(1)
+    arr = band.ReadAsArray()
+    [rows, cols] = arr.shape
+    arr_min = arr.min()
+    arr_max = arr.max()
+    for i in range(0, rows):
+        for j in range(0, cols):
+            if arr[i][j] == arr_min or arr[i][j] < 3:
+                arr[i][j] = 0
+
+    driver = gdal.GetDriverByName("GTiff")
+    outdata = driver.Create(newFile, cols, rows, 1, gdal.GDT_Float32)
+    outdata.SetGeoTransform(dataset.GetGeoTransform())##sets same geotransform as input
+    outdata.SetProjection(dataset.GetProjection())##sets same projection as input
+    outdata.GetRasterBand(1).WriteArray(arr)
+    outdata.FlushCache() 
+    
+
+def removeNoise(path, newFile):
+    if (os.path.exists(newFile)):
+        os.remove(newFile)
+
+    dataset = gdal.Open(path)
+    band = dataset.GetRasterBand(1)
+    arr = band.ReadAsArray()
+    [rows, cols] = arr.shape
+    arr_min = arr.min()
+    arr_max = arr.max()
+
+    for i in range(0, rows):
+        for j in range(0, cols):
+            pass
 
 if __name__ == "__main__":
     #load_lidar_data('implementation/lidar_data/20011104_959.laz', 1)
     #load_lidar_data('implementation/lidar_data/20011104_950.laz', 2)
-    create_dem('implementation/lidar_data/raster_1_with_trees.tif', 1)
-    create_dem('implementation/lidar_data/raster_2_with_trees.tif', 2)
-    # dataset = gdal.Open('implementation/lidar_data/raster_1.tif', gdal.GA_ReadOnly)
-    # for x in range(1, dataset.RasterCount + 1):
-    #     band = dataset.GetRasterBand(x).ReadAsArray()
-    #     array = band.ReadAsArray()
+    #create_dem('implementation/lidar_data/raster_1_with_trees.tif', 1)
+    #create_dem('implementation/lidar_data/raster_2_with_trees.tif', 2)
+
+    #postProcessDem('implementation/lidar_data/raster_1_with_trees.tif', 'implementation/lidar_data/modified_dem.tif')
+    #postProcessDem('implementation/lidar_data/raster_2_with_trees.tif', 'implementation/lidar_data/modified_dem_2.tif')
+
+    removeNoise('implementation/lidar_data/modified_dem.tif', 'implementation/lidar_data/noise_removed.tif')
