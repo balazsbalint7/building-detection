@@ -1,2 +1,3 @@
 *.tif.aux.xml
 .vscode
+*.las
