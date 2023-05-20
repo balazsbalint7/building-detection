@@ -65,6 +65,11 @@ def postProcessDem(path, newFile):
     outdata.GetRasterBand(1).WriteArray(arr)
     outdata.FlushCache() 
     
+def _getValOrZero(arr, xInd, yInd):
+    try:
+        return arr[xInd][yInd]
+    except:
+        return 0
 
 def removeNonPlanarPoints(path, newFile):
     if (not os.path.exists(path)):
@@ -86,6 +91,9 @@ def removeNonPlanarPoints(path, newFile):
             currPoint = arr[i][j]
             # create a 3*3 window for each point
             # if the point hasn't got 8 neighbor point, use 0 as padding
+            window = [[_getValOrZero(arr, i-1, j-1), _getValOrZero(arr, i-1, j), _getValOrZero(arr, i-1, j+1)], 
+                      [_getValOrZero(arr, i, j-1), currPoint, _getValOrZero(arr, i, j+1)], 
+                      [_getValOrZero(arr, i+1, j-1), _getValOrZero(arr, i+1, j), _getValOrZero(arr, i+1, j+1)]]
 
             # calculate normal vectors for detecting planar surfaces
 
