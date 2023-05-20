@@ -66,7 +66,10 @@ def postProcessDem(path, newFile):
     outdata.FlushCache() 
     
 
-def removeNoise(path, newFile):
+def removeNonPlanarPoints(path, newFile):
+    if (not os.path.exists(path)):
+        return
+
     if (os.path.exists(newFile)):
         os.remove(newFile)
 
@@ -74,12 +77,19 @@ def removeNoise(path, newFile):
     band = dataset.GetRasterBand(1)
     arr = band.ReadAsArray()
     [rows, cols] = arr.shape
-    arr_min = arr.min()
-    arr_max = arr.max()
+    arrMin = arr.min()
+    arrMax = arr.max()
 
+    outputArr = arr.copy()
     for i in range(0, rows):
         for j in range(0, cols):
-            pass
+            currPoint = arr[i][j]
+            # create a 3*3 window for each point
+            # if the point hasn't got 8 neighbor point, use 0 as padding
+
+            # calculate normal vectors for detecting planar surfaces
+
+            # if the point fits to a plane then add its original value to 
 
 if __name__ == "__main__":
     #load_lidar_data('implementation/lidar_data/20011104_959.laz', 1)
@@ -90,4 +100,4 @@ if __name__ == "__main__":
     #postProcessDem('implementation/lidar_data/raster_1_with_trees.tif', 'implementation/lidar_data/modified_dem.tif')
     #postProcessDem('implementation/lidar_data/raster_2_with_trees.tif', 'implementation/lidar_data/modified_dem_2.tif')
 
-    removeNoise('implementation/lidar_data/modified_dem.tif', 'implementation/lidar_data/noise_removed.tif')
+    removeNoise('lidar_data/modified_dem.tif', 'implementation/lidar_data/noise_removed.tif')
