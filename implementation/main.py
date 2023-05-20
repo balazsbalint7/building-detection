@@ -74,6 +74,28 @@ def _getValOrZero(arr, xInd, yInd):
         return arr[xInd][yInd]
     except:
         return 0
+    
+def isItCollinear(window):
+    if window[0] == [0, 0, 0] or window[2] == [0, 0, 0]:
+        return False
+    else:
+        ab = vectorSubtraction(window[0], window[1])
+        ac = vectorSubtraction(window[0], window[2])
+        abac = vectorCrossProduct(ab, ac)
+        if abac == [0, 0, 0]:
+            return True
+        else: 
+            return False
+
+def vectorSubtraction(v1, v2):
+    result = np.subtract(v1, v2)
+    return result
+
+def vectorCrossProduct(v1, v2):
+    result = [v1[1]*v2[2] - v1[2]*v2[1],
+            v1[2]*v2[0] - v1[0]*v2[2],
+            v1[0]*v2[1] - v1[1]*v2[0]]
+    return result
 
 def removeNonPlanarPoints(path, newFile):
     if (not os.path.exists(path)):
@@ -88,6 +110,7 @@ def removeNonPlanarPoints(path, newFile):
     [rows, cols] = arr.shape
     arrMin = arr.min()
     arrMax = arr.max()
+    collinearPoints = []
 
     outputArr = arr.copy()
     for i in range(0, rows):
@@ -97,10 +120,12 @@ def removeNonPlanarPoints(path, newFile):
             # if the point hasn't got 8 neighbor point, use 0 as padding
             window = [[_getValOrZero(arr, i-1, j-1), _getValOrZero(arr, i-1, j), _getValOrZero(arr, i-1, j+1)], 
                       [_getValOrZero(arr, i, j-1), currPoint, _getValOrZero(arr, i, j+1)], 
-                      [_getValOrZero(arr, i+1, j-1), _getValOrZero(arr, i+1, j), _getValOrZero(arr, i+1, j+1)]]
+                      [_getValOrZero(arr, i+1, j-1), _getValOrZero(arr, i+1, j), _getValOrZero(arr, i+1, j+1)], (i, j)]
 
             # calculate normal vectors for detecting planar surfaces
-
+            isThisWindowCollinear = isItCollinear(window)
+            if isThisWindowCollinear == True:
+                collinearPoints.append(window[3])
             # if the point fits to a plane then add its original value to 
 
 if __name__ == "__main__":
@@ -112,4 +137,4 @@ if __name__ == "__main__":
     #postProcessDem('implementation/lidar_data/raster_1_with_trees.tif', 'implementation/lidar_data/modified_dem.tif')
     #postProcessDem('implementation/lidar_data/raster_2_with_trees.tif', 'implementation/lidar_data/modified_dem_2.tif')
 
-    removeNoise('lidar_data/modified_dem.tif', 'implementation/lidar_data/noise_removed.tif')
+    removeNonPlanarPoints('implementation/lidar_data/modified_dem.tif', 'implementation/lidar_data/noise_removed.tif')
