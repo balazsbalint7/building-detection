@@ -66,6 +66,10 @@ def postProcessDem(path, newFile):
     outdata.FlushCache() 
     
 def _getValOrZero(arr, xInd, yInd):
+    [rows, cols] = arr.shape
+    if xInd < 0 or yInd < 0 or xInd > rows -1 or yInd > cols -1:
+        return 0
+    
     try:
         return arr[xInd][yInd]
     except:
