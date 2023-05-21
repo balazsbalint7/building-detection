@@ -65,22 +65,28 @@ def postProcessDem(path, newFile):
     outdata.GetRasterBand(1).WriteArray(arr)
     outdata.FlushCache() 
     
-def _getValOrZero(arr, xInd, yInd):
+def _getValOrZero(arr, xVal, yVal):
+    zVal = 0
     [rows, cols] = arr.shape
-    if xInd < 0 or yInd < 0 or xInd > rows -1 or yInd > cols -1:
-        return 0
+    if xVal < 0 or yVal < 0 or xVal > rows -1 or yVal > cols -1:
+        zValue = 0
     
     try:
-        return arr[xInd][yInd]
+        zValue = arr[xVal][yVal]
     except:
-        return 0
+        pass
+
+    return (xVal, yVal, zVal)
     
-def isItCollinear(window):
-    if window[0] == [0, 0, 0] or window[2] == [0, 0, 0]:
+def isItCollinear(line):
+    if line[0][2] == line[1][2] and line[1][2] == line[2][2]: # when the values are equal, then it is collinear
+        return True
+
+    if line[0][2] == 0 or line[2][2] == 0: # when the neighbours are 0 then it doesn't need a check
         return False
     else:
-        ab = vectorSubtraction(window[0], window[1])
-        ac = vectorSubtraction(window[0], window[2])
+        ab = vectorSubtraction(line[0], line[1])
+        ac = vectorSubtraction(line[0], line[2])
         abac = vectorCrossProduct(ab, ac)
         if abac == [0, 0, 0]:
             return True
@@ -110,23 +116,41 @@ def removeNonPlanarPoints(path, newFile):
     [rows, cols] = arr.shape
     arrMin = arr.min()
     arrMax = arr.max()
-    collinearPoints = []
 
     outputArr = arr.copy()
     for i in range(0, rows):
         for j in range(0, cols):
-            currPoint = arr[i][j]
+            currPoint = (i, j, arr[i][j])
+
+            if currPoint[2] == 0: # if the z value is 0, then we can go the next iteration
+                continue
+
             # create a 3*3 window for each point
             # if the point hasn't got 8 neighbor point, use 0 as padding
             window = [[_getValOrZero(arr, i-1, j-1), _getValOrZero(arr, i-1, j), _getValOrZero(arr, i-1, j+1)], 
                       [_getValOrZero(arr, i, j-1), currPoint, _getValOrZero(arr, i, j+1)], 
                       [_getValOrZero(arr, i+1, j-1), _getValOrZero(arr, i+1, j), _getValOrZero(arr, i+1, j+1)], (i, j)]
 
+            # We have to check these lines from the window:
+            # | | | |    | |*| |   |*| | |   | | |*|
+            # |*|*|*|    | |*| |   | |*| |   | |*| |
+            # | | | |    | |*| |   | | |*|   |*| | |
             # calculate normal vectors for detecting planar surfaces
-            isThisWindowCollinear = isItCollinear(window)
-            if isThisWindowCollinear == True:
-                collinearPoints.append(window[3])
-            # if the point fits to a plane then add its original value to 
+            horizontalLine = (window[1][0], window[1][1], window[1][2])
+            verticalLine = (window[0][1], window[1][1], window[2][1])
+            diagonalLineLeft = (window[0][0], window[1][1], window[2][2])
+            diagonalLineRight = (window[0][2], window[1][1], window[2][0])
+
+            hasCollinearLine = isItCollinear(horizontalLine) or isItCollinear(verticalLine) or isItCollinear(diagonalLineLeft) or isItCollinear(diagonalLineRight)
+            # if the point fits to a plane then add its original value to
+            outputArr[i][j] = currPoint[2] if hasCollinearLine else 0
+
+    driver = gdal.GetDriverByName("GTiff")
+    outdata = driver.Create(newFile, cols, rows, 1, gdal.GDT_Float32)
+    outdata.SetGeoTransform(dataset.GetGeoTransform())##sets same geotransform as input
+    outdata.SetProjection(dataset.GetProjection())##sets same projection as input
+    outdata.GetRasterBand(1).WriteArray(outputArr)
+    outdata.FlushCache()
 
 if __name__ == "__main__":
     #load_lidar_data('implementation/lidar_data/20011104_959.laz', 1)
@@ -137,4 +161,4 @@ if __name__ == "__main__":
     #postProcessDem('implementation/lidar_data/raster_1_with_trees.tif', 'implementation/lidar_data/modified_dem.tif')
     #postProcessDem('implementation/lidar_data/raster_2_with_trees.tif', 'implementation/lidar_data/modified_dem_2.tif')
 
-    removeNonPlanarPoints('implementation/lidar_data/modified_dem.tif', 'implementation/lidar_data/noise_removed.tif')
+    removeNonPlanarPoints('lidar_data/modified_dem.tif', 'lidar_data/noise_removed.tif')
