@@ -86,7 +86,7 @@ def isItCollinear(line):
         ab = vectorSubtraction(line[0], line[1])
         ac = vectorSubtraction(line[0], line[2])
         abac = vectorCrossProduct(ab, ac)
-        if abac == [0, 0, 0]:
+        if abac == (0, 0, 0):
             return True
         else: 
             return False
@@ -96,10 +96,8 @@ def vectorSubtraction(v1, v2):
     return result
 
 def vectorCrossProduct(v1, v2):
-    result = [v1[1]*v2[2] - v1[2]*v2[1],
-            v1[2]*v2[0] - v1[0]*v2[2],
-            v1[0]*v2[1] - v1[1]*v2[0]]
-    return result
+    result = np.cross(v1, v2)
+    return (result[0], result[1], result[2])
 
 rows, cols = 0, 0
 
@@ -122,7 +120,7 @@ def removeNonPlanarPoints(path, newFile):
     for (i,j), value in np.ndenumerate(arr):
             currPoint = (i, j, value)
 
-            if currPoint[2] == 0: # if the z value is 0, then we can go the next iteration
+            if value == 0 or value < 16: # if the z value is 0, then we can go the next iteration
                 continue
             else:
                 if i in validPoints:
@@ -174,3 +172,4 @@ if __name__ == "__main__":
     #postProcessDem('implementation/lidar_data/raster_2_with_trees.tif', 'implementation/lidar_data/modified_dem_2.tif')
 
     removeNonPlanarPoints('lidar_data/modified_dem.tif', 'lidar_data/noise_removed.tif')
+    removeNonPlanarPoints('lidar_data/modified_dem_2.tif', 'lidar_data/noise_removed_2.tif')
