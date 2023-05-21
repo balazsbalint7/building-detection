@@ -4,7 +4,7 @@ import numpy as np
 from osgeo import gdal
 import matplotlib.pyplot as plt
 from PIL import Image
-import os, shutil
+import os, shutil, sys
 
 def load_lidar_data(path, num):
     print("Dataset " + str(num))
@@ -63,35 +63,33 @@ def postProcessDem(path, newFile):
     outdata.SetGeoTransform(dataset.GetGeoTransform())##sets same geotransform as input
     outdata.SetProjection(dataset.GetProjection())##sets same projection as input
     outdata.GetRasterBand(1).WriteArray(arr)
-    outdata.FlushCache() 
-    
-def _getValOrZero(arr, xVal, yVal):
-    zVal = 0
-    [rows, cols] = arr.shape
-    if xVal < 0 or yVal < 0 or xVal > rows -1 or yVal > cols -1:
-        zValue = 0
-    
-    try:
-        zValue = arr[xVal][yVal]
-    except:
-        pass
+    outdata.FlushCache()
+
+def getValOrZero(arr, xVal, yVal):
+    global rows, cols
+    zVal = 0.0
+    if not (xVal < 0 or yVal < 0 or xVal > rows -1 or yVal > cols -1):
+        try:
+            zVal = arr[xVal][yVal]
+        except:
+            pass
 
     return (xVal, yVal, zVal)
     
 def isItCollinear(line):
-    if line[0][2] == line[1][2] and line[1][2] == line[2][2]: # when the values are equal, then it is collinear
-        return True
-
     if line[0][2] == 0 or line[2][2] == 0: # when the neighbours are 0 then it doesn't need a check
         return False
-    else:
-        ab = vectorSubtraction(line[0], line[1])
-        ac = vectorSubtraction(line[0], line[2])
-        abac = vectorCrossProduct(ab, ac)
-        if abac == [0, 0, 0]:
-            return True
-        else: 
-            return False
+
+    # if line[0][2] == line[1][2] and line[1][2] == line[2][2]: # when the values are equal, then it is collinear
+    #     return True
+    #else:
+    ab = vectorSubtraction(line[0], line[1])
+    ac = vectorSubtraction(line[0], line[2])
+    abac = vectorCrossProduct(ab, ac)
+    if abac == [0, 0, 0]:
+        return True
+    else: 
+        return False
 
 def vectorSubtraction(v1, v2):
     result = np.subtract(v1, v2)
@@ -103,6 +101,8 @@ def vectorCrossProduct(v1, v2):
             v1[0]*v2[1] - v1[1]*v2[0]]
     return result
 
+rows, cols = 0, 0
+
 def removeNonPlanarPoints(path, newFile):
     if (not os.path.exists(path)):
         return
@@ -112,24 +112,36 @@ def removeNonPlanarPoints(path, newFile):
 
     dataset = gdal.Open(path)
     band = dataset.GetRasterBand(1)
-    arr = band.ReadAsArray()
-    [rows, cols] = arr.shape
-    arrMin = arr.min()
-    arrMax = arr.max()
+    arr = np.array(band.ReadAsArray())
 
+    global rows, cols
+    [rows, cols] = arr.shape
+
+    validPoints = {}
     outputArr = arr.copy()
-    for i in range(0, rows):
-        for j in range(0, cols):
-            currPoint = (i, j, arr[i][j])
+    for (i,j), value in np.ndenumerate(arr):
+            currPoint = (i, j, value)
 
             if currPoint[2] == 0: # if the z value is 0, then we can go the next iteration
                 continue
+            else:
+                if i in validPoints:
+                    if j in validPoints[i]:
+                        validPoints[i][j].append(value)
+                    else:
+                        validPoints[i][j] = value
+                else:
+                    validPoints[i] = {j : value}
 
+    for x in validPoints:
+        for y in validPoints[x]:
+            point = (x, y, validPoints[x][y])
             # create a 3*3 window for each point
             # if the point hasn't got 8 neighbor point, use 0 as padding
-            window = [[_getValOrZero(arr, i-1, j-1), _getValOrZero(arr, i-1, j), _getValOrZero(arr, i-1, j+1)], 
-                      [_getValOrZero(arr, i, j-1), currPoint, _getValOrZero(arr, i, j+1)], 
-                      [_getValOrZero(arr, i+1, j-1), _getValOrZero(arr, i+1, j), _getValOrZero(arr, i+1, j+1)], (i, j)]
+
+            window = [[getValOrZero(validPoints, x-1, y-1), getValOrZero(validPoints, x-1, y), getValOrZero(validPoints, x-1, y+1)], 
+                      [getValOrZero(validPoints, x, y-1), point, getValOrZero(validPoints, x, y+1)], 
+                      [getValOrZero(validPoints, x+1, y-1), getValOrZero(validPoints, x+1, y), getValOrZero(validPoints, x+1, y+1)]]
 
             # We have to check these lines from the window:
             # | | | |    | |*| |   |*| | |   | | |*|
@@ -142,8 +154,8 @@ def removeNonPlanarPoints(path, newFile):
             diagonalLineRight = (window[0][2], window[1][1], window[2][0])
 
             hasCollinearLine = isItCollinear(horizontalLine) or isItCollinear(verticalLine) or isItCollinear(diagonalLineLeft) or isItCollinear(diagonalLineRight)
-            # if the point fits to a plane then add its original value to
-            outputArr[i][j] = currPoint[2] if hasCollinearLine else 0
+            # # if the point fits to a plane then add its original value to
+            outputArr[x, y] = point[2] if hasCollinearLine else 0
 
     driver = gdal.GetDriverByName("GTiff")
     outdata = driver.Create(newFile, cols, rows, 1, gdal.GDT_Float32)
@@ -161,4 +173,4 @@ if __name__ == "__main__":
     #postProcessDem('implementation/lidar_data/raster_1_with_trees.tif', 'implementation/lidar_data/modified_dem.tif')
     #postProcessDem('implementation/lidar_data/raster_2_with_trees.tif', 'implementation/lidar_data/modified_dem_2.tif')
 
-    removeNonPlanarPoints('lidar_data/modified_dem.tif', 'lidar_data/noise_removed.tif')
+    removeNonPlanarPoints('lidar_data/modified_dem.tif', 'implementation/lidar_data/noise_removed.tif')
