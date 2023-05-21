@@ -80,16 +80,16 @@ def isItCollinear(line):
     if line[0][2] == 0 or line[2][2] == 0: # when the neighbours are 0 then it doesn't need a check
         return False
 
-    # if line[0][2] == line[1][2] and line[1][2] == line[2][2]: # when the values are equal, then it is collinear
-    #     return True
-    #else:
-    ab = vectorSubtraction(line[0], line[1])
-    ac = vectorSubtraction(line[0], line[2])
-    abac = vectorCrossProduct(ab, ac)
-    if abac == [0, 0, 0]:
-        return True
-    else: 
-        return False
+    if line[0][2] == line[1][2] and line[1][2] == line[2][2]: # when the values are equal, then it is collinear
+         return True
+    else:
+        ab = vectorSubtraction(line[0], line[1])
+        ac = vectorSubtraction(line[0], line[2])
+        abac = vectorCrossProduct(ab, ac)
+        if abac == [0, 0, 0]:
+            return True
+        else: 
+            return False
 
 def vectorSubtraction(v1, v2):
     result = np.subtract(v1, v2)
@@ -105,6 +105,7 @@ rows, cols = 0, 0
 
 def removeNonPlanarPoints(path, newFile):
     if (not os.path.exists(path)):
+        print("input path not exists")
         return
 
     if (os.path.exists(newFile)):
@@ -118,7 +119,6 @@ def removeNonPlanarPoints(path, newFile):
     [rows, cols] = arr.shape
 
     validPoints = {}
-    outputArr = arr.copy()
     for (i,j), value in np.ndenumerate(arr):
             currPoint = (i, j, value)
 
@@ -155,13 +155,13 @@ def removeNonPlanarPoints(path, newFile):
 
             hasCollinearLine = isItCollinear(horizontalLine) or isItCollinear(verticalLine) or isItCollinear(diagonalLineLeft) or isItCollinear(diagonalLineRight)
             # # if the point fits to a plane then add its original value to
-            outputArr[x, y] = point[2] if hasCollinearLine else 0
+            arr[x, y] = point[2] if hasCollinearLine else 0
 
     driver = gdal.GetDriverByName("GTiff")
     outdata = driver.Create(newFile, cols, rows, 1, gdal.GDT_Float32)
     outdata.SetGeoTransform(dataset.GetGeoTransform())##sets same geotransform as input
     outdata.SetProjection(dataset.GetProjection())##sets same projection as input
-    outdata.GetRasterBand(1).WriteArray(outputArr)
+    outdata.GetRasterBand(1).WriteArray(arr)
     outdata.FlushCache()
 
 if __name__ == "__main__":
@@ -173,4 +173,4 @@ if __name__ == "__main__":
     #postProcessDem('implementation/lidar_data/raster_1_with_trees.tif', 'implementation/lidar_data/modified_dem.tif')
     #postProcessDem('implementation/lidar_data/raster_2_with_trees.tif', 'implementation/lidar_data/modified_dem_2.tif')
 
-    removeNonPlanarPoints('lidar_data/modified_dem.tif', 'implementation/lidar_data/noise_removed.tif')
+    removeNonPlanarPoints('lidar_data/modified_dem.tif', 'lidar_data/noise_removed.tif')
