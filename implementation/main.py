@@ -163,8 +163,8 @@ def removeNonPlanarPoints(path, newFile):
     outdata.FlushCache()
 
 if __name__ == "__main__":
-    #load_lidar_data('implementation/lidar_data/20011104_959.laz', 1)
-    #load_lidar_data('implementation/lidar_data/20011104_950.laz', 2)
+    load_lidar_data('lidar_data/20011104_950.laz', 1)
+    load_lidar_data('lidar_data/20011104_959.laz', 2)
     #create_dem('implementation/lidar_data/raster_1_with_trees.tif', 1)
     #create_dem('implementation/lidar_data/raster_2_with_trees.tif', 2)
 
