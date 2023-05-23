@@ -101,6 +101,13 @@ def vectorCrossProduct(v1, v2):
 
 rows, cols = 0, 0
 
+def saveWindow(output, window):
+    for i in range(len(window)):
+        for j in range(len(window[i])):
+            x, y, z = window[i][j]
+            if not (x < 0 or y < 0 or x > rows -1 or y > cols -1):
+                output[x, y] = z
+
 def removeNonPlanarPoints(path, newFile):
     if (not os.path.exists(path)):
         print("input path not exists")
@@ -154,6 +161,7 @@ def removeNonPlanarPoints(path, newFile):
             hasCollinearLine = isItCollinear(horizontalLine) or isItCollinear(verticalLine) or isItCollinear(diagonalLineLeft) or isItCollinear(diagonalLineRight)
             # # if the point fits to a plane then add its original value to
             arr[x, y] = point[2] if hasCollinearLine else 0
+            #saveWindow(arr, window)
 
     driver = gdal.GetDriverByName("GTiff")
     outdata = driver.Create(newFile, cols, rows, 1, gdal.GDT_Float32)
